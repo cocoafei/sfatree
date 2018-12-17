@@ -1,7 +1,4 @@
 import os
-from flask_migrate import upgrade
-from app.models import Role, User
-
 
 COV = None
 if os.environ.get('FLASK_COVERAGE'):
@@ -11,7 +8,7 @@ if os.environ.get('FLASK_COVERAGE'):
 
 import sys
 import click
-from flask_migrate import Migrate
+from flask_migrate import Migrate, upgrade
 from app import create_app, db
 from app.models import User, Follow, Role, Permission, Post, Comment
 
@@ -60,16 +57,17 @@ def profile(length, profile_dir):
     from werkzeug.contrib.profiler import ProfilerMiddleware
     app.wsgi_app = ProfilerMiddleware(app.wsgi_app, restrictions=[length],
                                       profile_dir=profile_dir)
-    app.run(debug=False)
+    app.run()
 
 
 @app.cli.command()
 def deploy():
-    """Run deployment tasks"""
+    """Run deployment tasks."""
+    # migrate database to latest revision
     upgrade()
 
-    # 创建和更新用户角色
+    # create or update user roles
     Role.insert_roles()
 
-    # 确保所有用户关注他们自己
+    # ensure all users are following themselves
     User.add_self_follows()
